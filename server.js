@@ -36,6 +36,12 @@ const getAdjustment = (param, time) => {
       afternoon: 0.35,
       evening: 0.45,
     },
+    stress: {
+      night: 0.1,     // ночью стресс обычно низкий
+      morning: 0.4,   // утром вероятность роста стресса выше
+      afternoon: 0.5,
+      evening: 0.3,
+    },
   };
 
   return map[param][time];
@@ -58,7 +64,8 @@ const generateNextData = (lastData) => {
   const base = {
     temperature: typeof lastData?.temperature === 'number' ? lastData.temperature : 36.6,
     pulse: typeof lastData?.pulse === 'number' ? lastData.pulse : 75,
-    spo2: typeof lastData?.spo2 === 'number' ? lastData.spo2 : 98,
+    spo2: typeof lastData?.spo2 === 'number' ? lastData.spo2 : 94,
+    stress: typeof lastData?.stress === 'number' ? lastData.stress : 20, // базовый уровень стресса
   };
 
   return {
@@ -79,15 +86,23 @@ const generateNextData = (lastData) => {
     }),
     spo2: generateValue({
       prev: base.spo2,
-      min: 96,
-      max: 100,
+      min: 92,
+      max: 98,
       step: 1,
       increaseChance: getAdjustment('spo2', time),
+    }),
+    stress: generateValue({
+      prev: base.stress,
+      min: 0,
+      max: 100,
+      step: 2,
+      increaseChance: getAdjustment('stress', time),
     }),
   };
 };
 
 app.post('/health-data', (req, res) => {
+  console.log('Пришел запрос')
   const previous = req.body;
   const next = generateNextData(previous);
   res.json(next);
